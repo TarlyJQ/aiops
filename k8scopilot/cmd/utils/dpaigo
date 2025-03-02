@@ -1,0 +1,84 @@
+package utils
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+
+	"github.com/go-errors/errors"
+	openai "github.com/sashabaranov/go-openai"
+)
+
+// 新增自定义响应结构体
+type AliyunChatResponse struct {
+	Choices []struct {
+		Message struct {
+			Content          string `json:"content"`
+			ReasoningContent string `json:"reasoning_content"` // 阿里云特有字段
+		} `json:"message"`
+	} `json:"choices"`
+}
+
+type OpenAI struct {
+	Client *openai.Client
+	ctx    context.Context
+}
+
+func NewOpenAIClient() (*OpenAI, error) {
+	// 修改环境变量名为阿里云要求的 DASHSCOPE_API_KEY
+	apiKey := os.Getenv("DASHSCOPE_API_KEY")
+	if apiKey == "" {
+		return nil, errors.New("DASHSCOPE_API_KEY is not set")
+	}
+
+	config := openai.DefaultConfig(apiKey)
+	// 设置阿里云专用端点（保持不变）
+	config.BaseURL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+
+	return &OpenAI{
+		Client: openai.NewClientWithConfig(config),
+		ctx:    context.Background(),
+	}, nil
+}
+
+type ChatResponse struct {
+	FinalAnswer      string
+	ReasoningContent string
+}
+
+func (o *OpenAI) SendMessage(prompt, content string) (*ChatResponse, error) {
+	req := openai.ChatCompletionRequest{
+		Model: "deepseek-r1-distill-llama-8b",
+		Messages: []openai.ChatCompletionMessage{
+			{
+				Role:    openai.ChatMessageRoleSystem,
+				Content: prompt,
+			},
+			{
+				Role:    openai.ChatMessageRoleUser,
+				Content: content,
+			},
+		},
+	}
+
+	// 发送请求
+	resp, err := o.Client.CreateChatCompletion(o.ctx, req)
+	if err != nil {
+		return nil, fmt.Errorf("API请求失败: %w", err)
+	}
+	if len(resp.Choices) == 0 {
+		return nil, errors.New("阿里云返回空响应")
+	}
+
+	var aliyunResp AliyunChatResponse
+	rawData, _ := json.Marshal(resp)
+	if err := json.Unmarshal(rawData, &aliyunResp); err != nil {
+		return nil, fmt.Errorf("解析阿里云响应失败: %w", err)
+	}
+
+	return &ChatResponse{
+		FinalAnswer:      resp.Choices[0].Message.Content,
+		ReasoningContent: aliyunResp.Choices[0].Message.ReasoningContent,
+	}, nil
+}
