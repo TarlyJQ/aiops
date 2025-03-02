@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: demo-1
+  namespace: go-code
+  name: demo-1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-1
+  strategy: {}
+  template:
+    metadata:
+      labels:
+        app: demo-1
+    spec:
+      containers:
+      - image: tarly/go-code-demo-1:latest
+        name: demo-1
+        imagePullPolicy: IfNotPresent
+status: {}
