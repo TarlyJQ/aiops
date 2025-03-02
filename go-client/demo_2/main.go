@@ -6,10 +6,9 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/clinet-go/rest"
 )
 
 func main() {
@@ -31,5 +30,7 @@ func main() {
 	// 创建一个空结构体，存储 pod 列表
 	podList := &corev1.PodList{}
 	restClint.Get().Namespace("kube-system").Resource("pods").Do(context.TODO()).Into(podList)
-
+	for _, pod := range podList.Items {
+		fmt.Printf("pod name %s, %s, %s\n", pod.Name, pod.Namespace, pod.Status.Phase)
+	}
 }
