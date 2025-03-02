@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   labels:
     app: demo-1
-  namespace: go-code
+  namespace: helm-app
   name: demo-1
 spec:
   replicas: 1
@@ -16,8 +16,9 @@ spec:
       labels:
         app: demo-1
     spec:
+      serviceAccountName: go-code
       containers:
-      - image: tarly/go-code-demo-1:latest
+      - image: tarly/go-code-demo-1:incluster
         name: demo-1
         imagePullPolicy: IfNotPresent
 status: {}

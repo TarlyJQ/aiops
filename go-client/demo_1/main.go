@@ -2,30 +2,37 @@ package main
 
 import (
 	"context"
-	"flag"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/rest"
 )
 
 func main() {
-	kubeconfig := flag.String("kubeconfig", "/root/.kube/config", "Path to the kubeconfig file")
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	config, err := rest.InClusterConfig()
+	// kubeconfig := flag.String("kubeconfig", "/root/.kube/config", "Path to the kubeconfig file")
+	// config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("err %s", err.Error())
 	}
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("err %s", err.Error())
 	}
-	pods, _ := clientset.CoreV1().Pods("helm-app").List(context.TODO(), metav1.ListOptions{})
+	//pod
+	pods, err := clientset.CoreV1().Pods("helm-app").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		fmt.Printf("err %s", err.Error())
+	}
 	for _, pod := range pods.Items {
 		fmt.Println(pod.Name)
 	}
 	// deployment
-	deployments, _ := clientset.AppsV1().Deployments("helm-app").List(context.TODO(), metav1.ListOptions{})
+	deployments, err := clientset.AppsV1().Deployments("helm-app").List(context.TODO(), metav1.ListOptions{})
+	if err != nil {
+		fmt.Printf("err %s", err.Error())
+	}
 	for _, deployment := range deployments.Items {
 		fmt.Println(deployment.Name)
 	}
